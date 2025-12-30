@@ -43,6 +43,7 @@ Access the editor directly here:
 ## 📂 Project Structure
 
 ├── index.html # Main application (Monolithic for maximum portability)
+
 └── README.md # Project documentation
 
 
