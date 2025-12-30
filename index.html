@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ManchiCode V3.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Playfair+Display:wght@900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #000000;
+            --splash-grad: radial-gradient(circle at center, #003300 0%, #000000 100%);
+            --header-bg: #050505;
+            --text: #00ff00;
+            --gold: #d4af37;
+            --gold-glow: rgba(212, 175, 55, 0.4);
+            --pink: #ff0077;
+            --blue: #00fbff;
+            --sidebar: #000a00;
+            --gutter-num: #004400;
+            --line-h: 1.3em;
+            --font-main: 'VT323', monospace;
+            --transition: all 0.2s ease;
+        }
+
+        body.light-mode {
+            --bg: #fdfaf0;
+            --splash-grad: radial-gradient(circle at center, #f2e1c2 0%, #fdfaf0 100%);
+            --header-bg: #e2d1a8;
+            --text: #825a2c;
+            --gold: #8e6d1c;
+            --gold-glow: rgba(142, 109, 28, 0.2);
+            --pink: #a91e56;
+            --blue: #005f73;
+            --sidebar: #fffef5;
+            --gutter-num: #d9c5a3;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+        body, html { height: 100%; width: 100%; background: var(--bg); color: var(--text); font-family: var(--font-main); overflow: hidden; transition: var(--transition); }
+
+        body::after {
+            content: ""; position: fixed; inset: 0; pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%);
+            background-size: 100% 4px; z-index: 5000;
+        }
+
+        .logo-container { display: flex; align-items: center; gap: 6px; user-select: none; padding: 5px 0; }
+        .logo-manchi { font-family: 'Playfair Display', serif; font-weight: 900; font-size: 1.5rem; color: var(--gold); text-transform: none; }
+        .logo-code { font-family: 'VT323', monospace; font-size: 1.4rem; color: var(--blue); border-left: 2px solid var(--pink); padding-left: 6px; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: none; align-items: center; justify-content: center; z-index: 2000; }
+        .modal-card { background: var(--bg); border: 2px solid var(--text); padding: 30px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 0 20px var(--text); }
+        .modal-input { width: 100%; background: transparent; border: 1px solid var(--text); color: var(--text); padding: 12px; margin-bottom: 20px; font-family: var(--font-main); font-size: 1.2rem; text-align: center;}
+
+        .btn { background: transparent; color: var(--text); border: 1px solid var(--text); padding: 8px 12px; font-family: var(--font-main); font-size: 1.1rem; text-transform: uppercase; cursor: pointer; transition: var(--transition); user-select: none; white-space: nowrap; }
+        .btn:hover { background: var(--text); color: var(--bg); box-shadow: 0 0 10px var(--text); }
+        .btn-pink { border-color: var(--pink); color: var(--pink); }
+
+        #splash { position: fixed; inset: 0; z-index: 1000; background: var(--splash-grad); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .splash-card { background: transparent; padding: 40px; border: 1px solid var(--text); text-align: center; width: 90%; max-width: 400px;}
+        .splash-footer { position: absolute; bottom: 30px; text-align: center; letter-spacing: 2px; font-size: 1.1rem; opacity: 0.8; user-select: none; line-height: 1.4; }
+
+        .app-container { display: none; flex-direction: column; height: 100vh; }
+        .header { background: var(--header-bg); padding: 10px 15px; border-bottom: 2px solid var(--text); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
+        .nav-tools { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; flex-grow: 1; }
+
+        @media (max-width: 600px) {
+            .header { justify-content: center; }
+            .nav-tools { justify-content: center; width: 100%; }
+            .btn { flex-grow: 1; text-align: center; padding: 10px 5px; font-size: 0.9rem; }
+        }
+
+        .main-stage { flex-grow: 1; display: flex; position: relative; overflow: hidden; }
+        #gutter { width: 65px; background: var(--bg); border-right: 1px solid var(--text); overflow: hidden; padding-top: 15px; }
+        .gutter-num { text-align: right; padding-right: 12px; font-family: var(--font-main); font-size: 1.1rem; color: var(--gutter-num); width: 100%; display: flex; align-items: flex-start; justify-content: flex-end; }
+        .editor-box { position: relative; flex-grow: 1; height: 100%; overflow: hidden; padding-top: 15px; }
+        .text-metrics { line-height: var(--line-h) !important; padding: 0 20px !important; white-space: pre-wrap !important; word-break: break-all !important; }
+        #editor { width: 100%; height: 100%; background: transparent; color: var(--text); border: none; resize: none; overflow-y: scroll; overflow-x: hidden; font-family: var(--font-main); font-size: 24px; scroll-behavior: smooth; caret-color: var(--text); caret-shape: block; }
+        #mirror { position: absolute; visibility: hidden; pointer-events: none; z-index: -1; top: 0; left: 0; height: auto; }
+
+        .sidebar { position: fixed; right: -350px; top: 0; width: 320px; height: 100%; background: var(--sidebar); border-left: 2px solid var(--text); transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1); z-index: 1500; display: flex; flex-direction: column; }
+        .sidebar.open { right: 0; }
+        .sidebar-head { padding: 20px; border-bottom: 1px solid var(--text); display: flex; justify-content: space-between; align-items: center; color: var(--text); font-size: 1.4rem; }
+        .idx-item { padding: 12px 20px; border-bottom: 1px solid rgba(0,255,0,0.1); cursor: pointer; transition: 0.2s; font-size: 1.1rem; }
+        .idx-item:hover { background: var(--text); color: var(--bg); }
+
+        .config-group { padding: 20px; border-bottom: 1px solid rgba(0,255,0,0.1); }
+        .config-label { display: block; font-size: 0.9rem; color: var(--text); margin-bottom: 10px; opacity: 0.7; }
+        select, input[type="range"] { width: 100%; background: transparent; color: var(--text); border: 1px solid var(--text); padding: 8px; cursor: pointer; font-family: var(--font-main); }
+    </style>
+</head>
+<body>
+
+    <div class="modal-overlay" id="modal-new">
+        <div class="modal-card">
+            <h3 id="txt-modal-title">[ + ] INITIALIZE_NEW_FILE</h3>
+            <input type="text" id="m-input" class="modal-input" placeholder="file_name.py">
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" style="flex: 1" onclick="confirmNew()">[ EXECUTE ]</button>
+                <button class="btn btn-pink" style="flex: 1" onclick="closeModal('modal-new')">[ ABORT ]</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="splash">
+        <div class="logo-container" style="margin-bottom: 40px; transform: scale(2.2);">
+            <span class="logo-manchi">Manchi</span><span class="logo-code">Code</span>
+        </div>
+        <div class="splash-card">
+            <button class="btn" id="btn-splash-new" style="width: 100%; padding: 15px; margin-bottom: 12px;" onclick="openModal('modal-new')">[ + ] CREATE_NEW_DATA</button>
+            <button class="btn" id="btn-splash-load" style="width: 100%; padding: 15px; margin-bottom: 12px;" onclick="document.getElementById('fIn').click()">[ 💾 ] LOAD_EXISTING</button>
+            <button class="btn btn-pink" id="btn-splash-settings" style="width: 100%; padding: 15px;" onclick="toggleSidebar('sidebar-conf')">[ ⚙️🌐 ] SYSTEM_SETTINGS</button>
+            <input type="file" id="fIn" style="display:none" onchange="openProject(event)">
+        </div>
+
+        <div class="splash-footer" id="txt-splash-footer">
+            [ Developed by: Steven Arias ]<br>
+            2025
+        </div>
+    </div>
+
+    <div class="app-container" id="manchi-app">
+        <header class="header">
+            <div class="logo-container">
+                <span class="logo-manchi">Manchi</span><span class="logo-code">Code</span>
+            </div>
+            <div class="nav-tools">
+                <button class="btn" id="btn-nav-run" style="display:none; color:var(--blue); border-color:var(--blue)" onclick="runHTML()">[ ▶️ ] RUN</button>
+                <button class="btn" id="btn-nav-idx" onclick="toggleSidebar('sidebar-idx')">[ 📖 ] INDEX</button>
+                <button class="btn" onclick="toggleSidebar('sidebar-conf')">⚙️</button>
+                <button class="btn" id="btn-nav-save" onclick="save()">[ 💾 ] SAVE</button>
+                <button class="btn btn-pink" id="btn-nav-exit" onclick="location.reload()">[ ❌ ] EXIT</button>
+            </div>
+        </header>
+
+        <main class="main-stage">
+            <div id="gutter"></div>
+            <div class="editor-box">
+                <textarea id="editor" class="text-metrics" spellcheck="false" oninput="handleInput()" onscroll="sync()"></textarea>
+                <div id="mirror" class="text-metrics"></div>
+            </div>
+        </main>
+
+        <footer class="mobile-kb" style="display: grid; grid-template-columns: repeat(4, 1fr); background: var(--text); gap: 1px;">
+            <button style="grid-column: span 4; background: var(--bg); color: var(--text); border: none; padding: 18px 0; font-family: var(--font-main); font-size: 1.3rem; cursor: pointer; font-weight: bold;" onclick="add('\t')">_TAB_</button>
+            <button style="background: var(--bg); color: var(--text); border: none; padding: 18px 0; font-family: var(--font-main); font-size: 1.3rem; cursor: pointer;" onclick="add('<')">&lt;</button>
+            <button style="background: var(--bg); color: var(--text); border: none; padding: 18px 0; font-family: var(--font-main); font-size: 1.3rem; cursor: pointer;" onclick="add('>')">&gt;</button>
+            <button style="background: var(--bg); color: var(--text); border: none; padding: 18px 0; font-family: var(--font-main); font-size: 1.3rem; cursor: pointer;" onclick="add('{')">{</button>
+            <button style="background: var(--bg); color: var(--text); border: none; padding: 18px 0; font-family: var(--font-main); font-size: 1.3rem; cursor: pointer;" onclick="add('}')">}</button>
+            <button style="background: var(--bg); color: var(--text); border: none; padding: 18px 0; font-family: var(--font-main); font-size: 1.3rem; cursor: pointer;" onclick="add('(')">(</button>
+            <button style="background: var(--bg); color: var(--text); border: none; padding: 18px 0; font-family: var(--font-main); font-size: 1.3rem; cursor: pointer;" onclick="add(')')">)</button>
+            <button style="background: var(--bg); color: var(--text); border: none; padding: 18px 0; font-family: var(--font-main); font-size: 1.3rem; cursor: pointer;" onclick="add(':')">:</button>
+            <button style="background: var(--bg); color: var(--text); border: none; padding: 18px 0; font-family: var(--font-main); font-size: 1.3rem; cursor: pointer;" onclick="add('=')">=</button>
+        </footer>
+    </div>
+
+    <aside id="sidebar-idx" class="sidebar">
+        <div class="sidebar-head"><span id="txt-idx-title">[ 📖 ] DATA_INDEX</span> <button class="btn btn-pink" onclick="toggleSidebar('sidebar-idx')">X</button></div>
+        <div id="idx-list" style="overflow-y:auto; flex-grow:1;"></div>
+    </aside>
+
+    <aside id="sidebar-conf" class="sidebar">
+        <div class="sidebar-head"><span id="txt-conf-title">[ ⚙️ ] CONFIGURATION</span> <button class="btn btn-pink" onclick="toggleSidebar('sidebar-conf')">X</button></div>
+        <div class="sidebar-content" style="padding:20px;">
+            <label id="txt-label-theme" style="display:block; margin-bottom:10px;">INTERFACE_THEME</label>
+            <select id="theme-sel" onchange="setTheme()" style="width:100%; background:transparent; color:inherit; border:1px solid currentColor; padding:8px;">
+                <option value="dark">PHOSPHOR_GREEN (DARK)</option>
+                <option value="light">VINTAGE_PAPER (LIGHT)</option>
+            </select>
+            <label id="txt-label-lang" style="display:block; margin-top:20px; margin-bottom:10px;">SYSTEM_LANGUAGE</label>
+            <select id="lang-sel" onchange="setLang()" style="width:100%; background:transparent; color:inherit; border:1px solid currentColor; padding:8px;">
+                <option value="en">ENGLISH / INGLÉS</option>
+                <option value="es">ESPAÑOL / SPANISH</option>
+            </select>
+            <label id="txt-label-size" style="display:block; margin-top:20px; margin-bottom:10px;">VIEWER_FONT_SIZE: <span id="font-val">24</span>px</label>
+            <input type="range" id="size-range" min="16" max="42" value="24" oninput="applySize()" style="width:100%;">
+        </div>
+    </aside>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const gain = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+            const bufferSize = audioCtx.sampleRate * 0.05;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; }
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            filter.type = 'bandpass'; gain.connect(audioCtx.destination); filter.connect(gain); noise.connect(filter);
+            if (type === 'type') {
+                filter.frequency.setValueAtTime(1200, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+                noise.start(); noise.stop(audioCtx.currentTime + 0.04);
+            } else {
+                filter.frequency.setValueAtTime(600, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+                noise.start(); noise.stop(audioCtx.currentTime + 0.1);
+            }
+        }
+
+        const i18n = {
+            en: {
+                splashNew: "[ + ] CREATE_NEW_DATA", splashLoad: "[ 💾 ] LOAD_EXISTING", splashSettings: "[ ⚙️🌐 ] SYSTEM_SETTINGS",
+                modalTitle: "[ + ] INITIALIZE_NEW_FILE", navIdx: "[ 📖 ] INDEX", navSave: "[ 💾 ] SAVE", navExit: "[ ❌ ] EXIT", navRun: "[ ▶️ ] RUN",
+                idxTitle: "[ 📖 ] DATA_INDEX", confTitle: "[ ⚙️ ] CONFIGURATION", labelTheme: "INTERFACE_THEME",
+                labelLang: "SYSTEM_LANGUAGE", labelSize: "VIEWER_FONT_SIZE", footer: "[ Developed by: Steven Arias ]<br>2025"
+            },
+            es: {
+                splashNew: "[ + ] CREAR_NUEVO_ARCHIVO", splashLoad: "[ 💾 ] CARGAR_PROYECTO", splashSettings: "[ ⚙️🌐 ] AJUSTES_SISTEMA",
+                modalTitle: "[ + ] INICIALIZAR_ARCHIVO", navIdx: "[ 📖 ] ÍNDICE", navSave: "[ 💾 ] GUARDAR", navExit: "[ ❌ ] SALIR", navRun: "[ ▶️ ] EJECUTAR",
+                idxTitle: "[ 📖 ] ÍNDICE_DATOS", confTitle: "[ ⚙️ ] CONFIGURACIÓN", labelTheme: "TEMA_INTERFAZ",
+                labelLang: "IDIOMA_SISTEMA", labelSize: "TAMAÑO_FUENTE", footer: "[ Desarrollado por: Steven Arias ]<br>2025"
+            }
+        };
+
+        function setLang() {
+            const l = document.getElementById('lang-sel').value;
+            const d = i18n[l];
+            document.getElementById('btn-splash-new').innerText = d.splashNew;
+            document.getElementById('btn-splash-load').innerText = d.splashLoad;
+            document.getElementById('btn-splash-settings').innerText = d.splashSettings;
+            document.getElementById('txt-modal-title').innerText = d.modalTitle;
+            document.getElementById('btn-nav-idx').innerText = d.navIdx;
+            document.getElementById('btn-nav-save').innerText = d.navSave;
+            document.getElementById('btn-nav-exit').innerText = d.navExit;
+            document.getElementById('btn-nav-run').innerText = d.navRun;
+            document.getElementById('txt-idx-title').innerText = d.idxTitle;
+            document.getElementById('txt-conf-title').innerText = d.confTitle;
+            document.getElementById('txt-label-theme').innerText = d.labelTheme;
+            document.getElementById('txt-label-lang').innerText = d.labelLang;
+            document.getElementById('txt-label-size').innerText = d.labelSize;
+            document.getElementById('txt-splash-footer').innerHTML = d.footer;
+            playSound('click');
+        }
+
+        const editor = document.getElementById('editor');
+        const gutter = document.getElementById('gutter');
+        const mirror = document.getElementById('mirror');
+        let fName = "terminal.log";
+
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; playSound('click'); }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; playSound('click'); }
+        function confirmNew() { fName = document.getElementById('m-input').value || "file.txt"; launch(""); closeModal('modal-new'); }
+        function openProject(e) { const f = e.target.files[0]; const r = new FileReader(); r.onload = (ev) => { fName = f.name; launch(ev.target.result); }; r.readAsText(f); }
+        
+        function launch(val) { 
+            document.getElementById('splash').style.display = 'none'; 
+            document.getElementById('manchi-app').style.display = 'flex'; 
+            editor.value = val; 
+            const ext = fName.split('.').pop().toLowerCase();
+            document.getElementById('btn-nav-run').style.display = (ext === 'html') ? 'block' : 'none';
+            upd(); 
+        }
+
+        function runHTML() { playSound('click'); const win = window.open(); win.document.write(editor.value); win.document.close(); }
+        function handleInput() { playSound('type'); upd(); }
+        function upd() {
+            const val = editor.value;
+            gutter.innerHTML = "";
+            mirror.style.width = editor.clientWidth + "px"; 
+            val.split('\n').forEach((txt, i) => {
+                mirror.textContent = (txt || " ") + "\u200b";
+                const n = document.createElement('div');
+                n.className = 'gutter-num';
+                n.style.height = mirror.offsetHeight + "px";
+                n.style.lineHeight = getComputedStyle(editor).lineHeight;
+                n.innerText = (i + 1).toString().padStart(3, '0');
+                gutter.appendChild(n);
+            });
+            sync(); scanIndex();
+        }
+
+        function sync() { gutter.scrollTop = editor.scrollTop; }
+        function scanIndex() {
+            const list = document.getElementById('idx-list');
+            list.innerHTML = "";
+            const t = editor.value;
+            const regs = [{ r: /(?:def|function|class)\s+([a-zA-Z0-9_]+)/g, t: 'FUNC' }, { r: /id=["']([^"']+)["']/g, t: 'ID' }];
+            regs.forEach(p => {
+                let m;
+                while((m = p.r.exec(t)) !== null) {
+                    const name = m[1], offset = m.index, len = m[0].length;
+                    const d = document.createElement('div');
+                    d.className = 'idx-item';
+                    d.innerHTML = `&gt; [${p.t}] ${name}`;
+                    d.onclick = () => {
+                        playSound('click');
+                        const linesBefore = t.substring(0, offset).split('\n');
+                        let scrollSum = 0;
+                        mirror.style.width = editor.clientWidth + "px";
+                        for(let i=0; i<linesBefore.length-1; i++) { mirror.textContent = (linesBefore[i] || " ") + "\u200b"; scrollSum += mirror.offsetHeight; }
+                        editor.focus(); editor.setSelectionRange(offset, offset + len);
+                        editor.scrollTop = scrollSum; toggleSidebar('sidebar-idx'); sync();
+                    };
+                    list.appendChild(d);
+                }
+            });
+        }
+
+        function setTheme() { document.body.className = (document.getElementById('theme-sel').value === 'light') ? 'light-mode' : ''; upd(); playSound('click'); }
+        function applySize() {
+            const s = document.getElementById('size-range').value;
+            document.getElementById('font-val').innerText = s;
+            editor.style.fontSize = mirror.style.fontSize = s + "px";
+            upd();
+        }
+        function toggleSidebar(id) { document.getElementById(id).classList.toggle('open'); playSound('click'); }
+        function add(t) { const s = editor.selectionStart; editor.value = editor.value.substring(0, s) + t + editor.value.substring(editor.selectionEnd); editor.selectionStart = editor.selectionEnd = s + t.length; editor.focus(); handleInput(); }
+        function save() { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([editor.value])); a.download = fName; a.click(); playSound('click'); }
+
+        editor.addEventListener('keydown', (e) => { if(e.key === 'Tab') { e.preventDefault(); add('    '); } });
+        window.addEventListener('resize', () => { if(editor.offsetParent) upd(); });
+        window.onload = () => { applySize(); };
+    </script>
+</body>
+</html>
