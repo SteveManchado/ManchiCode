@@ -84,9 +84,7 @@
         .idx-item { padding: 12px 20px; border-bottom: 1px solid rgba(0,255,0,0.1); cursor: pointer; transition: 0.2s; font-size: 1.1rem; }
         .idx-item:hover { background: var(--text); color: var(--bg); }
 
-        .config-group { padding: 20px; border-bottom: 1px solid rgba(0,255,0,0.1); }
-        .config-label { display: block; font-size: 0.9rem; color: var(--text); margin-bottom: 10px; opacity: 0.7; }
-        select, input[type="range"] { width: 100%; background: transparent; color: var(--text); border: 1px solid var(--text); padding: 8px; cursor: pointer; font-family: var(--font-main); }
+        .sidebar-content { padding: 20px; overflow-y: auto; flex-grow: 1; }
     </style>
 </head>
 <body>
@@ -161,7 +159,7 @@
 
     <aside id="sidebar-conf" class="sidebar">
         <div class="sidebar-head"><span id="txt-conf-title">[ ⚙️ ] CONFIGURATION</span> <button class="btn btn-pink" onclick="toggleSidebar('sidebar-conf')">X</button></div>
-        <div class="sidebar-content" style="padding:20px;">
+        <div class="sidebar-content">
             <label id="txt-label-theme" style="display:block; margin-bottom:10px;">INTERFACE_THEME</label>
             <select id="theme-sel" onchange="setTheme()" style="width:100%; background:transparent; color:inherit; border:1px solid currentColor; padding:8px;">
                 <option value="dark">PHOSPHOR_GREEN (DARK)</option>
@@ -174,12 +172,18 @@
             </select>
             <label id="txt-label-size" style="display:block; margin-top:20px; margin-bottom:10px;">VIEWER_FONT_SIZE: <span id="font-val">24</span>px</label>
             <input type="range" id="size-range" min="16" max="42" value="24" oninput="applySize()" style="width:100%;">
+            
+            <hr style="margin-top:25px; border:0; border-top:1px solid var(--text); opacity:0.3;">
+            <button class="btn" id="btn-mute" onclick="toggleMute()" style="width:100%; margin-top:25px;">[ 🔊 ] SOUND: ON</button>
         </div>
     </aside>
 
     <script>
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let isMuted = false;
+
         function playSound(type) {
+            if (isMuted) return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const gain = audioCtx.createGain();
             const filter = audioCtx.createBiquadFilter();
@@ -208,13 +212,15 @@
                 splashNew: "[ + ] CREATE_NEW_DATA", splashLoad: "[ 💾 ] LOAD_EXISTING", splashSettings: "[ ⚙️🌐 ] SYSTEM_SETTINGS",
                 modalTitle: "[ + ] INITIALIZE_NEW_FILE", navIdx: "[ 📖 ] INDEX", navSave: "[ 💾 ] SAVE", navExit: "[ ❌ ] EXIT", navRun: "[ ▶️ ] RUN",
                 idxTitle: "[ 📖 ] DATA_INDEX", confTitle: "[ ⚙️ ] CONFIGURATION", labelTheme: "INTERFACE_THEME",
-                labelLang: "SYSTEM_LANGUAGE", labelSize: "VIEWER_FONT_SIZE", footer: "[ Developed by: Steven Arias ]<br>2025"
+                labelLang: "SYSTEM_LANGUAGE", labelSize: "VIEWER_FONT_SIZE", footer: "[ Developed by: Steven Arias ]<br>2025",
+                soundOn: "SOUND: ON", soundOff: "SOUND: MUTED"
             },
             es: {
                 splashNew: "[ + ] CREAR_NUEVO_ARCHIVO", splashLoad: "[ 💾 ] CARGAR_PROYECTO", splashSettings: "[ ⚙️🌐 ] AJUSTES_SISTEMA",
                 modalTitle: "[ + ] INICIALIZAR_ARCHIVO", navIdx: "[ 📖 ] ÍNDICE", navSave: "[ 💾 ] GUARDAR", navExit: "[ ❌ ] SALIR", navRun: "[ ▶️ ] EJECUTAR",
                 idxTitle: "[ 📖 ] ÍNDICE_DATOS", confTitle: "[ ⚙️ ] CONFIGURACIÓN", labelTheme: "TEMA_INTERFAZ",
-                labelLang: "IDIOMA_SISTEMA", labelSize: "TAMAÑO_FUENTE", footer: "[ Desarrollado por: Steven Arias ]<br>2025"
+                labelLang: "IDIOMA_SISTEMA", labelSize: "TAMAÑO_FUENTE", footer: "[ Desarrollado por: Steven Arias ]<br>2025",
+                soundOn: "SONIDO: ACTIVADO", soundOff: "SONIDO: SILENCIADO"
             }
         };
 
@@ -235,7 +241,20 @@
             document.getElementById('txt-label-lang').innerText = d.labelLang;
             document.getElementById('txt-label-size').innerText = d.labelSize;
             document.getElementById('txt-splash-footer').innerHTML = d.footer;
+            
+            // Actualizar texto del botón de silencio
+            const muteBtn = document.getElementById('btn-mute');
+            muteBtn.innerText = isMuted ? `[ 🔇 ] ${d.soundOff}` : `[ 🔊 ] ${d.soundOn}`;
+            
             playSound('click');
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const l = document.getElementById('lang-sel').value;
+            const btn = document.getElementById('btn-mute');
+            btn.innerText = isMuted ? `[ 🔇 ] ${i18n[l].soundOff}` : `[ 🔊 ] ${i18n[l].soundOn}`;
+            if (!isMuted) playSound('click');
         }
 
         const editor = document.getElementById('editor');
